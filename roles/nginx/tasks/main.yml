@@ -1,0 +1,54 @@
+---
+  - name: Add Nginx Repo
+    apt_repository: repo='ppa:nginx/stable' state=present
+
+  - name: Install Nginx
+    apt:
+      name: nginx
+      state: present
+      force: yes
+      update_cache: yes
+
+  - name: Add H5BP Nginx.Conf
+    copy: src=nginx.conf dest=/etc/nginx owner=root group=root
+
+  - name: Add H5BP Config
+    copy: src=h5bp dest=/etc/nginx owner=root group=root
+
+  - name: Disable Default Config
+    sudo: yes
+    file:
+      dest: /etc/nginx/sites-enabled/default
+      state: absent
+    notify: restart nginx
+
+  - name: Symlink default site
+    sudo: yes
+    template: src=default.j2 dest=/etc/nginx/sites-available/default
+    notify: restart nginx
+
+  - name: Enable SFH Site Config
+    sudo: yes
+    file:
+      src: /etc/nginx/sites-available/default
+      dest: /etc/nginx/sites-enabled/default
+      state: link
+    notify: restart nginx
+
+  - name: Set Nginx PID
+    sudo: yes
+    lineinfile:
+      dest: /etc/nginx/nginx.conf
+      regexp: "^pid"
+      line: "pid /run/nginx.pid;"
+      state: present
+    notify: restart nginx
+
+  - name: Set Nginx user
+    sudo: yes
+    lineinfile:
+      dest: /etc/nginx/nginx.conf
+      regexp: "^user"
+      line: "user www-data;"
+      state: present
+    notify: restart nginx
